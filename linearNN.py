@@ -17,7 +17,7 @@ class DataGen():
     """docstring for DataGen"""
     def __init__(self, num=10, dim=1, cls=2):
         self.data = np.random.random((cls, num, dim))
-        self.label = np.ones((cls, num))
+        self.label = np.ones((cls, num), dtype=np.int32)
         # Separate data
         for each in range(cls):
             self.data[each] *= (each+1)
@@ -35,10 +35,15 @@ class DataGen():
 
 class Sigmoid():
     """docstring for Sigmoid"""
-
+    self.result = 0
     def __call__(self, x):
         """docstring for __call__"""
-        return 1 / (1+np.exp(-x))
+        self.result = 1 / (1+np.exp(-x))
+        return self.result
+
+    def differentiate(self):
+        """docstring for differentiate"""
+        return self.result * (1 - self.result)
 
     def show(self):
         """docstring for show"""
@@ -53,9 +58,26 @@ class MeanSquareError():
     def __init__(self):
         self.outputs = 0
 
+    def onehot_label(self, l):
+        """
+            Convert labels to onehot label:
+            [1, 0, 0, 1] => [[0, 1], [1, 0], [1, 0], [0, 1]]
+        """
+        ele = np.unique(l)
+        ohl = np.zeros((l.shape[0], ele.shape[0]))
+        for col in range(l.shape[0]):
+            ohl[col][l[col]] = 1
+        return ohl
+
+    def differentiate(self):
+        """docstring for differentiate"""
+        return 2 * (y - self.label)
+
     def __call__(self, y, label):
         """docstring for __call__"""
-        self.outputs = np.sum(np.square(y-label))
+        self.label = label
+        # self.outputs = np.sum(np.square(y-self.onehot_label(label)))
+        self.outputs = np.sum(np.square(y-self.label))
         return self.outputs
 
 
@@ -71,11 +93,17 @@ class Neuron():
             self.bias = np.random.random(1)
 
     def __call__(self, x):
-        """docstring for __call__"""
-        print(x.shape)
-        print(self.weight.shape)
-        print(np.dot(x,self.weight))
-        return np.dot(x, self.weight) + self.bias
+        """
+            o = WX+B
+        """
+        o = np.dot(x, self.weight) + self.bias
+        return o[0] # Get value from numpy array
+
+    def differentiate_wrt_weight(self):
+        """docstring for differentiate"""
+        return self.weight
+
+    def
 
     def update(self, dw, db):
         """docstring for update"""
@@ -96,7 +124,7 @@ class LinearLayer():
         The output shape would be:
             (batch_size, out_dim)
     """
-    def __init__(self, in_dim:int, out_dim: int, bias:bool, num=2):
+    def __init__(self, in_dim:int, out_dim: int, bias:bool):
         self.neurons = [Neuron(dim=in_dim, bias=bias) for _ in range(out_dim)]
         self.outputs = np.zeros((out_dim))
 
@@ -116,24 +144,37 @@ class NeuralNetwork():
         self.tr_x, self.tr_y, self.te_x, self.te_y = data.split()
         self.lossFunc = MeanSquareError()
         self.fcl1 = LinearLayer(in_dim=self.tr_x.shape[1], out_dim=2, bias=True)
-        self.fcl2 = LinearLayer(in_dim=2, out_dim=2, bias=True, num=1)
-        self.activation = Sigmoid()
+        self.fcl2 = LinearLayer(in_dim=2, out_dim=1, bias=True)
+        self.activate = Sigmoid()
+
+        self.sequential = [
+            LinearLayer(in_dim=self.tr_x.shape[1], out_dim=2, bias=True),
+            Sigmoid(),
+            LinearLayer(in_dim=2, out_dim=1, bias=True),
+            Sigmoid()
+        ]
 
     def forward(self, x):
         """docstring for forward"""
-        x = self.fcl1(x)
-        x = self.fcl2(x)
-        return self.activation(x)
+        #x = self.fcl1(x)
+        #x = self.activate(x)
+        #x = self.fcl2(x)
+        #o = self.activate(x)
+        for layer in self.sequential:
+            x = layer(x)
+        return x
 
     def backward(self, y):
         """docstring for backward"""
+        
+
         return
 
     def train(self, epochs=100):
         """docstring for train"""
         for epoch in range(epochs):
             output = self.forward(self.tr_x)
-            loss = self.lossFunc(output, tr_y)
+            loss = self.lossFunc(output, self.tr_y)
             self.backward(loss)
             print("epoch: {} loss: {}".format(epoch, loss))
 
