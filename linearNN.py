@@ -7,10 +7,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 """
-             x_1      nerual_11
-    X   =>   x_2  =>  nerual_12 =>  neural_21 => Y
+             x_1      neuron_11
+    X   =>   x_2  =>  neuron_12 =>  neuron_21 => Y
 
 """
+
+
+class DataGen():
+    """docstring for DataGen"""
+    def __init__(self, num=10, dim=1, cls=2):
+        self.data = np.random.random((cls, num, dim))
+        self.label = np.ones((cls, num))
+        # Separate data
+        for each in range(cls):
+            self.data[each] *= (each+1)
+            self.label[each] *= (each)
+        randSelect = num * cls
+        rs = np.random.randint(np.ones(randSelect)*randSelect)
+        self.data = np.concatenate(self.data)[rs]
+        self.label = np.concatenate(self.label)[rs]
+
+    def split(self, rate=0.8):
+        """docstring for split"""
+        sp = int(self.label.shape[0] * rate)
+        return self.data[:sp], self.label[:sp], self.data[sp:], self.label[sp:]
 
 
 class Sigmoid():
@@ -39,19 +59,22 @@ class MeanSquareError():
         return self.outputs
 
 
-class Neural():
+class Neuron():
     """
-        The neural is the unit to perform mathematical
+        The neuron is the unit to perform mathematical
         operations. The shape of it therefore needs to
         match with the input data shape.
     """
-    def __init__(self, inputs: int, dim: int, bias: bool):
-        self.weight = np.random.random(dim, inputs)
+    def __init__(self, dim: int, bias: bool):
+        self.weight = np.random.random((dim))
         if bias:
-            self.bias = np.random.random(inputs)
+            self.bias = np.random.random(1)
 
     def __call__(self, x):
         """docstring for __call__"""
+        print(x.shape)
+        print(self.weight.shape)
+        print(np.dot(x,self.weight))
         return np.dot(x, self.weight) + self.bias
 
     def update(self, dw, db):
@@ -61,14 +84,25 @@ class Neural():
 
 
 class LinearLayer():
-    """docstring for LinearLayer"""
-    def __init__(self, inputs:int, dim: int, bias:bool, num=2):
-        self.neurals = [Neural(inputs=inputs, dim=dim, bias=bias) for _ in range(num)]
-        self.outputs = np.zeros(num)
+    """
+        Docstring for LinearLayer
+
+        in_dim: specify the input dimention of the data.
+        out_fim: specify the output dimention of the data.
+        bias: enable bias.
+
+        The shape of the input data should be:
+            (batch_size, in_dim)
+        The output shape would be:
+            (batch_size, out_dim)
+    """
+    def __init__(self, in_dim:int, out_dim: int, bias:bool, num=2):
+        self.neurons = [Neuron(dim=in_dim, bias=bias) for _ in range(out_dim)]
+        self.outputs = np.zeros((out_dim))
 
     def __call__(self, x):
         """docstring for __call__"""
-        self.outputs = np.array([neural(x) for neural in self.neurals])
+        self.outputs = np.array([[neuron(p) for neuron in self.neurons] for p in x])
         return self.outputs
 
     def update(self):
@@ -76,33 +110,13 @@ class LinearLayer():
         return
 
 
-class DataGen():
-    """docstring for DataGen"""
-    def __init__(self, num=10, dim=1, cls=2):
-        self.data = np.random.random((cls, num, dim))
-        self.label = np.ones((cls, num))
-        # Separate data
-        for each in range(cls):
-            self.data[each] *= (each+1)
-            self.label[each] *= (each)
-        randSelect = num * cls
-        rs = np.random.randint(np.ones(randSelect)*randSelect)
-        self.data = np.concatenate(self.data)[rs]
-        self.label = np.concatenate(self.label)[rs]
-
-    def split(self, rate=0.8):
-        """docstring for split"""
-        sp = int(self.label.shape[0] * rate)
-        return self.data[:sp], self.label[:sp], self.data[sp:], self.label[sp:]
-
-
 class NeuralNetwork():
     """docstring for NeuralNetwork"""
-    def __init__(self, data=DataGen(num=100)):
+    def __init__(self, data=DataGen(num=10)):
         self.tr_x, self.tr_y, self.te_x, self.te_y = data.split()
         self.lossFunc = MeanSquareError()
-        self.fcl1 = LinearLayer(inputs=self.tr_x.shape[0], dim=, bias=True, num=2)
-        self.fcl2 =  LinearLayer(inputs=self.fcl1.outputs.shape[0], bias=True,num=1)
+        self.fcl1 = LinearLayer(in_dim=self.tr_x.shape[1], out_dim=2, bias=True)
+        self.fcl2 = LinearLayer(in_dim=2, out_dim=2, bias=True, num=1)
         self.activation = Sigmoid()
 
     def forward(self, x):
