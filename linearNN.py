@@ -56,18 +56,67 @@ class DataGenReg(DataGen):
         plt.show()
 
 
-class Sigmoid():
-    """docstring for Sigmoid"""
-    result = 0
+class DataGenRegSin(DataGen):
+    """description"""
+
+    def __init__(self, num=50):
+        """docstring for __init__"""
+        self.data = np.linspace(0, 3*np.pi, num).reshape(-1, 1)
+        self.label = np.array([np.sin(self.data)], dtype=np.float16).reshape(-1, 1)
+        self.data /= self.data.max()
+        self.label -= self.label.min()
+        self.label /= self.label.max()
+
+    def show(self):
+        """docstring for show"""
+        plt.scatter(self.data, self.label)
+        plt.show()
+
+
+class ReLu():
+    """docstring for ReLu"""
+    # Activation function output
+    afo = 0
+    # Derivative of activation function output
+    dafo = 0
 
     def __call__(self, x):
         """docstring for __call__"""
-        self.result = 1 / (1+np.exp(-x))
-        return self.result
+        self.afo = np.maximum(x, 0)
+        return self.afo
 
     def differentiate(self):
         """docstring for differentiate"""
-        return self.result * (1 - self.result)
+        self.dafo = self.afo.copy()
+        self.dafo[self.dafo>0] = 1
+        return self.dafo
+
+    def show(self):
+        """docstring for show"""
+        x = np.linspace(-10, 10, 100)
+        y = self(x)
+        plt.plot(x, y)
+        plt.show()
+
+#ReLu().show()
+#exit(0)
+
+class Sigmoid():
+    """docstring for Sigmoid"""
+    # Activation function output
+    afo = 0
+    # Derivative of activation function output
+    dafo = 0
+
+    def __call__(self, x):
+        """docstring for __call__"""
+        self.afo = 1 / (1+np.exp(-x))
+        return self.afo
+
+    def differentiate(self):
+        """docstring for differentiate"""
+        self.dafo = self.afo * (1 - self.afo)
+        return self.dafo
 
     def show(self):
         """docstring for show"""
@@ -77,25 +126,30 @@ class Sigmoid():
         plt.show()
 
 
-class MeanSquareError():
-    """docstring for MeanSquareError"""
+class MeanSquareLoss():
+    """
+        Mean Square Loss
+    """
 
-    def __init__(self):
-        self.outputs = 0
+    # Derivative of Loss with respect 
+    # to the output of the final layer
+    dl_dypred = 0
+    # Data label
+    ground_truth = 0
+    # The output of the final layer
+    y_pred = 0
 
     def differentiate(self):
         """docstring for differentiate"""
-        #print("label", self.label)
-        #print("y", self.y)
-        return 2 * (self.y - self.label)
+        self.dl_dypred = 2 * (self.y_pred - self.ground_truth)
+        return self.dl_dypred
 
-    def __call__(self, y, label):
+    def __call__(self, y_pred, gt):
         """docstring for __call__"""
-        self.label = label
-        self.y = y
-        self.outputs = (np.square(self.y-self.label)).mean()
-        return self.outputs
-
+        self.ground_truth = gt
+        self.y_pred = y_pred
+        loss = (np.square(self.y_pred-self.ground_truth)).mean()
+        return loss
 
 class CrossEntropyLoss():
     """docstring for CrossEntropyLoss"""
@@ -128,6 +182,7 @@ class Neuron():
         match with the input data shape.
     """
     bias = 0
+    inputs = 0
 
     def __init__(self, dim: int, bias: bool):
         self.weight = np.random.randn((dim))
@@ -136,17 +191,24 @@ class Neuron():
 
     def __call__(self, x):
         """
-            o = WX+B
+            Y = WX+B
+
+            x       => (dim)
+            weight  => (dim)
         """
-        #print("x", x)
-        #print("w", self.weight)
-        return np.dot(x, self.weight) + self.bias
+        z = np.dot(x, self.weight) + self.bias
+        return z
 
     def differenciate_wrt_weight(self, x, dO):
         """docstring for differentiate"""
         # print("x",x)
         # print("dO",dO)
         self.dw = dO.T.dot(x)[0]
+        self.db = dO.T[0].sum()
+        #print("b", self.bias)
+        #print("dw", self.dw)
+        #print("db", self.db)
+        #exit(0)
         #print("dw", self.dw)
         #print('w', self.weight)
         # return self.weight
@@ -155,7 +217,7 @@ class Neuron():
         """docstring for update"""
         #print("dw", self.dw)
         self.weight -= lr*self.dw
-        #self.bias -= db
+        self.bias -= lr*self.db
 
 
 class LinearLayer():
@@ -212,17 +274,17 @@ class LinearLayer():
 class NeuralNetwork():
     """docstring for NeuralNetwork"""
 
-    def __init__(self, lr=0.1, data=DataGenReg(num=100)):
+    def __init__(self, lr=0.01, data=DataGenRegSin(num=100)):
         self.data = data
         self.lr = lr
         self.tr_x, self.tr_y, self.te_x, self.te_y = self.data.split()
-        self.lossFunc = MeanSquareError()
+        self.lossFunc = MeanSquareLoss()
 
         self.sequential = [
-            LinearLayer(in_dim=self.tr_x.shape[1], out_dim=10, bias=False,
-                        activation=Sigmoid()),
-            LinearLayer(in_dim=10, out_dim=1, bias=False,
-                        activation=Sigmoid()),
+            LinearLayer(in_dim=1, out_dim=30, bias=True,
+                        activation=ReLu()),
+            LinearLayer(in_dim=30, out_dim=1, bias=True,
+                        activation=None),
         ]
 
         # self.sequential = [
@@ -236,13 +298,8 @@ class NeuralNetwork():
 
     def forward(self, x):
         """docstring for forward"""
-        #x = self.fcl1(x)
-        #x = self.activate(x)
-        #x = self.fcl2(x)
-        #o = self.activate(x)
         for layer in self.sequential:
             x = layer(x)
-            # print(x)
         return x
 
     def backward(self, y):
@@ -260,8 +317,8 @@ class NeuralNetwork():
             output = self.forward(self.tr_x)
             loss = self.lossFunc(output, self.tr_y)
             self.backward(loss)
-            if epoch % 50 == 0:
-                self.lr *= 0.8
+            if epoch % 100 == 0:
+                self.lr *= 0.9
             print("epoch: {} loss: {} lr: {}".format(epoch, loss, self.lr))
 
     def test(self):

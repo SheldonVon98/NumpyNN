@@ -81,7 +81,8 @@ class OurNeuralNetwork:
         d_ypred_d_w5 = h1 * deriv_sigmoid(sum_o1)
         d_ypred_d_w6 = h2 * deriv_sigmoid(sum_o1)
         d_ypred_d_b3 = deriv_sigmoid(sum_o1)
-
+        print(d_ypred_d_b3)
+        exit(0)
         d_ypred_d_h1 = self.w5 * deriv_sigmoid(sum_o1)
         d_ypred_d_h2 = self.w6 * deriv_sigmoid(sum_o1)
 
