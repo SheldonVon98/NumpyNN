@@ -199,15 +199,16 @@ class Neuron():
         z = np.dot(x, self.weight) + self.bias
         return z
 
-    def differenciate_wrt_weight(self, x, dO):
+    def differenciate_wrt_weight(self, x, dO, db):
         """docstring for differentiate"""
-        # print("x",x)
-        # print("dO",dO)
+        print("x",x.shape)
+        print("dO",dO.shape)
         self.dw = dO.T.dot(x)[0]
-        self.db = dO.T[0].sum()
+        self.db = db.sum()
+        print(db.shape)
         #print("b", self.bias)
         #print("dw", self.dw)
-        #print("db", self.db)
+        print("db", db)
         #exit(0)
         #print("dw", self.dw)
         #print('w', self.weight)
@@ -256,8 +257,8 @@ class LinearLayer():
             #print("dOda", dO *self.activation.differentiate())
             dO = dO * self.activation.differentiate()
             # print("dO",dO)
-        for neural in self.neurons:
-            neural.differenciate_wrt_weight(self.inputs, dO)
+        for idx, neural in enumerate(self.neurons):
+            neural.differenciate_wrt_weight(self.inputs, dO, dO[:, idx])
             # print("dO",dO)
         #print(np.array([neural.weight for neural in self.neurons]))
         di = dO.dot(np.array([neural.weight for neural in self.neurons]))
@@ -274,7 +275,7 @@ class LinearLayer():
 class NeuralNetwork():
     """docstring for NeuralNetwork"""
 
-    def __init__(self, lr=0.01, data=DataGenRegSin(num=100)):
+    def __init__(self, lr=0.05, data=DataGenRegSin(num=100)):
         self.data = data
         self.lr = lr
         self.tr_x, self.tr_y, self.te_x, self.te_y = self.data.split()
@@ -311,14 +312,14 @@ class NeuralNetwork():
             dO = layer.differentiate(dO.copy(), self.lr)
         # exit()
 
-    def train(self, epochs=2000):
+    def train(self, epochs=1000):
         """docstring for train"""
         for epoch in range(epochs):
             output = self.forward(self.tr_x)
             loss = self.lossFunc(output, self.tr_y)
             self.backward(loss)
-            if epoch % 100 == 0:
-                self.lr *= 0.9
+            if epoch % 50 == 0:
+                self.lr *= 0.7
             print("epoch: {} loss: {} lr: {}".format(epoch, loss, self.lr))
 
     def test(self):
