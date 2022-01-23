@@ -15,8 +15,8 @@ w = [1, 1]
 label = np.matmul(data, w).reshape((200,1))
 
 #100个训练数据
-train_data = data[:10]
-train_label = label[:10]
+train_data = data[:1]
+train_label = label[:1]
 
 #100个测数据
 test_data = data[100:]
@@ -27,6 +27,10 @@ test_label = data[100:]
 w1 = np.random.randn(input, hide_1)   # (2, 5)
 w2 = np.random.randn(hide_1, hide_2)  # (5, 4)
 w3 = np.random.randn(hide_2, output)  # (4, 1)
+#w1 = np.ones((input, hide_1))   # (2, 5)
+#w2 = np.ones((hide_1, hide_2))  # (5, 4)
+#w3 = np.ones((hide_2, output))  # (4, 1)
+
 
 #学习率
 learning_rate = 1e-5
@@ -57,23 +61,29 @@ def train(train_data, train_label, input, hide_1, hide_2, output, w1, w2, w3):
         # h1层
 
 
-        print(h1_relu, end="\n\n")
-        print(grad_y_pred, end="\n\n")
+        #print(h1_relu, end="\n\n")
+        #print(grad_y_pred, end="\n\n")
         grad_w3 = h1_relu.T.dot(grad_y_pred)
 
-        print(grad_w3, end="\n\n")
+        #print(grad_w3, end="\n\n")
         grad_h1_relu = grad_y_pred.dot(w3.T) 
         #print(grad_h1_relu, end="\n\n")
         grad_h1 = grad_h1_relu.copy()
         #print(grad_h1, end="\n\n")
         grad_h1[h1<0] = 0
-        exit(0)
+        #exit(0)
         #h0层
+        #print(h0_relu, end="\n\n")
+        print(grad_h1, end="\n\n")
+        print(w2, end="\n\n")
         grad_w2 = h0_relu.T.dot(grad_h1)
+        #print(grad_w2)
         grad_h0_relu = grad_h1.dot(w2.T) 
+        print(grad_h0_relu)
+        exit(0)
         grad_h0 = grad_h0_relu.copy()
         grad_h0[h0<0] = 0
-
+        #exit(0)
         #输入层
         grad_w1 = train_data.T.dot(grad_h0)
 
@@ -84,9 +94,10 @@ def train(train_data, train_label, input, hide_1, hide_2, output, w1, w2, w3):
         if epoch % 10000 == 0:
             #print("train",w1)
             print("train_loss", loss/100)      
-
-train(train_data, train_label, input, hide_1, hide_2, output, w1, w2, w3) 
-
+try:
+    train(train_data, train_label, input, hide_1, hide_2, output, w1, w2, w3) 
+except KeyboardInterrupt:
+    pass
 
 #测试
 def test(test_data, input, hide_1, hide_2, output, w1, w2, w3):
