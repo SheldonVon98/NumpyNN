@@ -35,7 +35,7 @@ class DataGen():
 
 class Sigmoid():
     """docstring for Sigmoid"""
-    self.result = 0
+    result = 0
     def __call__(self, x):
         """docstring for __call__"""
         self.result = 1 / (1+np.exp(-x))
@@ -58,6 +58,22 @@ class MeanSquareError():
     def __init__(self):
         self.outputs = 0
 
+    def differentiate(self):
+        """docstring for differentiate"""
+        return 2 * (self.outputs - self.label)
+
+    def __call__(self, y, label):
+        """docstring for __call__"""
+        self.label = label
+        self.outputs = np.sum(np.square(y-self.label))
+        return self.outputs
+
+
+class CrossEntropyLoss():
+    """docstring for CrossEntropyLoss"""
+    def __init__(self, arg):
+        self.arg = arg
+
     def onehot_label(self, l):
         """
             Convert labels to onehot label:
@@ -69,15 +85,10 @@ class MeanSquareError():
             ohl[col][l[col]] = 1
         return ohl
 
-    def differentiate(self):
-        """docstring for differentiate"""
-        return 2 * (y - self.label)
-
-    def __call__(self, y, label):
+    def __call__(self, label):
         """docstring for __call__"""
         self.label = label
-        # self.outputs = np.sum(np.square(y-self.onehot_label(label)))
-        self.outputs = np.sum(np.square(y-self.label))
+        self.outputs = np.sum(np.square(y-self.onehot_label(label)))
         return self.outputs
 
 
@@ -103,7 +114,6 @@ class Neuron():
         """docstring for differentiate"""
         return self.weight
 
-    def
 
     def update(self, dw, db):
         """docstring for update"""
@@ -124,14 +134,26 @@ class LinearLayer():
         The output shape would be:
             (batch_size, out_dim)
     """
-    def __init__(self, in_dim:int, out_dim: int, bias:bool):
+    def __init__(self, in_dim:int, out_dim: int, bias:bool, activation=None):
         self.neurons = [Neuron(dim=in_dim, bias=bias) for _ in range(out_dim)]
         self.outputs = np.zeros((out_dim))
+        self.activation = activation
 
     def __call__(self, x):
         """docstring for __call__"""
         self.outputs = np.array([[neuron(p) for neuron in self.neurons] for p in x])
-        return self.outputs
+        if self.activation is not None:
+            return self.activation(self.outputs)
+        else:
+            return self.outputs
+
+    def differentiate(self, dO):
+        print(dO)
+        if self.activation is not None:
+            print(self.activation.differentiate())
+        print(dO)
+        exit(0)
+        return dO
 
     def update(self):
         """docstring for update"""
@@ -148,10 +170,8 @@ class NeuralNetwork():
         self.activate = Sigmoid()
 
         self.sequential = [
-            LinearLayer(in_dim=self.tr_x.shape[1], out_dim=2, bias=True),
-            Sigmoid(),
-            LinearLayer(in_dim=2, out_dim=1, bias=True),
-            Sigmoid()
+            LinearLayer(in_dim=self.tr_x.shape[1], out_dim=2, bias=True, activation=Sigmoid()),
+            LinearLayer(in_dim=2, out_dim=1, bias=True, activation=Sigmoid()),
         ]
 
     def forward(self, x):
@@ -166,9 +186,13 @@ class NeuralNetwork():
 
     def backward(self, y):
         """docstring for backward"""
-        
-
-        return
+        d_loss_d_y_pre = self.lossFunc.differentiate()
+        dO = d_loss_d_y_pre
+        for layer in self.sequential[::-1]: # Traverse the layers reversely
+            print(layer)
+            dO = layer.differentiate(dO)
+            print(dO)
+        exit()
 
     def train(self, epochs=100):
         """docstring for train"""
