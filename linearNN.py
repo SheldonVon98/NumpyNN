@@ -211,15 +211,15 @@ class Neuron():
         #print(z)
         return z[0]
 
-    def differenciate(self, x, dO, idx):
+    def differenciate(self, x, dO):
         """docstring for differentiate"""
         #print("x",x.shape)
         #print("dO",dO.shape)
         #print("dO", dO)
         #print(idx)
         #print("x.T.dot(dO)", x.T.dot(dO).shape)
-        self.dw = x.T.dot(dO)[:, idx].reshape(-1, 1)
-        self.db = np.sum(dO, axis=0)[idx]
+        self.dw = x.T.dot(dO).reshape(-1, 1)
+        self.db = np.sum(dO, axis=0)
         #print(dO)
         #print(dO.shape)
         #print("b", self.bias.shape)
@@ -279,7 +279,7 @@ class LinearLayer():
             dO *= self.activation.differentiate()
             #print("dO",dO.shape)
         for idx, neural in enumerate(self.neurons):
-            neural.differenciate(self.inputs, dO, idx)
+            neural.differenciate(self.inputs, dO[:, idx])
             # print("dO",dO)
         #print(np.array([neural.weight for neural in self.neurons]))
         #print("ns", np.array([neural.weight[:, 0] for neural in self.neurons]).shape)
@@ -298,7 +298,7 @@ class LinearLayer():
 class NeuralNetwork():
     """docstring for NeuralNetwork"""
 
-    def __init__(self, lr=0.0005, data=DataGenRegSin(num=100)):
+    def __init__(self, lr=6e-4, data=DataGenRegSin(num=100)):
         self.data = data
         self.lr = lr
         self.tr_x, self.tr_y, self.te_x, self.te_y = self.data.split()
@@ -325,6 +325,12 @@ class NeuralNetwork():
             dO = layer.differentiate(dO.copy(), self.lr)
         # exit()
 
+    def lr_schedule(self):
+        """docstring for lr_schedule"""
+        if epoch > 3000:
+            if epoch % 100 == 0:
+                self.lr *= 0.98
+
     def train(self, epochs=20000):
         """docstring for train"""
         #self.fig.canvas.draw()
@@ -336,7 +342,7 @@ class NeuralNetwork():
             if epoch > 2000:
                 if epoch % 100 == 0:
                     self.lr *= 0.98
-            print("epoch: {} loss: {} lr: {}".format(epoch, loss, self.lr))
+            print("epoch: {} loss: {} lr: {}".format(epoch, round(loss, 8), self.lr))
 
     def test(self):
         """docstring for test"""
@@ -376,5 +382,3 @@ class NeuralNetwork():
 
 nn = NeuralNetwork()
 nn.train()
-#nn.vis()
-plt.show()
