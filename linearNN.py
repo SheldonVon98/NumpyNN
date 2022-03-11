@@ -12,7 +12,6 @@ from matplotlib import animation
 
 """
 
-
 class DataGen():
     """docstring for DataGen"""
 
